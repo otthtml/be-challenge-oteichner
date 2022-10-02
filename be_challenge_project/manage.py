@@ -7,6 +7,7 @@ import sys
 def main():
     """Run administrative tasks."""
     os.environ.setdefault("DJANGO_SETTINGS_MODULE", "be_challenge_project.settings")
+    os.environ.setdefault("API_KEY", "dc96a173696845bc94dbf253174b42ba")
     try:
         from django.core.management import execute_from_command_line # pylint: disable=import-outside-toplevel
     except ImportError as exc:
