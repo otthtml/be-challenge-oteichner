@@ -4,7 +4,7 @@ run:
 test:
 	cd be_challenge_project && python manage.py test
 
-makemigrations:
+migrations:
 	cd be_challenge_project && python manage.py makemigrations
 
 migrate:
