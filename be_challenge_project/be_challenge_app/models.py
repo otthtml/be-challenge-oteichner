@@ -11,4 +11,19 @@ class Team(models.Model):
     short_name = models.CharField(max_length=10)
     area = models.CharField(max_length=100)
     address = models.CharField(max_length=100)
-    league = models.ForeignKey(League, on_delete=models.CASCADE)
+    league = models.ManyToManyField(League)
+
+class BasePlayer(models.Model):
+    name = models.CharField(max_length=100)
+    date_of_birth = models.DateField()
+    nationality = models.CharField(max_length=100)
+    team = models.ForeignKey(Team, on_delete=models.CASCADE)
+
+    def __str__(self):
+        return str(self.name)
+
+class Player(BasePlayer):
+    position = models.CharField(max_length=100)
+
+class Coach(BasePlayer):
+    pass
