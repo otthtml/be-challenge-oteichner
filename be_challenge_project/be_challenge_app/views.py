@@ -1,13 +1,17 @@
 import os
 
 import requests
-from django.http import Http404, HttpResponse
+from django.http import HttpResponse
+from django.utils.decorators import method_decorator
 from django.views import View
+from ratelimit.decorators import ratelimit
 
-from .models import League, Team
+from be_challenge_app.models import League, Team, Player, Coach
 
 class ImportLeagueView(View):
-    def get(self, request):
+
+    @method_decorator(ratelimit(key='ip', rate='60/h', method='POST', block=True))
+    def post(self, request):            
         # get league code from query string
         league_code = request.GET.get('league-code')
         if not league_code:
@@ -15,15 +19,15 @@ class ImportLeagueView(View):
 
         # send request to football-data.org v4 API with timeout of 5 seconds
         response = requests.get(
-            f'https://api.football-data.org/v4/competitions/{league_code}', 
+            f'https://api.football-data.org/v4/competitions/{league_code}',
             timeout=5,
             headers={'X-Auth-Token': os.environ.get('API_KEY')}
         )
         # check if response is successful
         if response.status_code != 200:
             return HttpResponse("League not found", status=404)
-        
-        import_league(response)
+
+        league = import_league(response)
 
         # request teams from football-data.org v4 API with timeout of 5 seconds
         response = requests.get(
@@ -31,7 +35,7 @@ class ImportLeagueView(View):
             timeout=5,
             headers={'X-Auth-Token': os.environ.get('API_KEY')}
         )
-        import_teams(response)
+        import_teams(response, league)
 
         return HttpResponse("OK!")
 
@@ -50,7 +54,9 @@ def import_league(response):
         area=area_name
     )
 
-def import_teams(response):
+    return league
+
+def import_teams(response, related_league):
     # for each team in response, create team object
     for team in response.json().get('teams'):
         # get team name from response
@@ -62,9 +68,62 @@ def import_teams(response):
         # get team address from response
         team_address = team.get('address')
 
-        team = Team.objects.create(
+        # if team already exists, add team to league
+        if Team.objects.filter(name=team_name).exists(): # pylint: disable=no-member
+            team = Team.objects.get(name=team_name) # pylint: disable=no-member
+            team.league.add(related_league)
+            continue
+
+        # else create team object
+        db_team = Team.objects.create(
             name=team_name,
             short_name=team_short_name,
             area=team_area_name,
             address=team_address
         )
+        db_team.league.add(related_league)
+
+        # if team has players, create player objects
+        if team.get('squad'):
+            import_players(team.get('squad'), db_team)
+        else:
+            # else create coach object
+            import_coach(team.get('coach'), db_team)
+
+def import_players(players, related_team):
+    for player in players:
+        # get player name from response
+        player_name = player.get('name')
+        # get player position from response
+        player_position = player.get('position')
+        # get player date of birth from response
+        player_date_of_birth = player.get('dateOfBirth')
+        # get player country of birth from response
+        player_country_of_birth = player.get('nationality')
+
+        # create player object
+        db_player = Player.objects.create(
+            name=player_name,
+            position=player_position,
+            date_of_birth=player_date_of_birth,
+            nationality=player_country_of_birth
+        )
+        db_player.save()
+        db_player.team.add(related_team)
+
+def import_coach(coach, related_team):
+    # get coach name from response
+    coach_name = coach.get('name')
+    # get coach date of birth from response
+    coach_date_of_birth = coach.get('dateOfBirth')
+    # get coach country of birth from response
+    coach_country_of_birth = coach.get('nationality')
+
+    # create coach object
+    db_coach = Coach.objects.create(
+        name=coach_name,
+        date_of_birth=coach_date_of_birth,
+        nationality=coach_country_of_birth
+    )
+    db_coach.save()
+    db_coach.team.add(related_team)
