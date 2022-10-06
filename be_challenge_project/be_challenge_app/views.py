@@ -1,12 +1,13 @@
 import os
 
 import requests
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.decorators import method_decorator
 from django.views import View
 from ratelimit.decorators import ratelimit
 
 from be_challenge_app.services import import_league, import_teams
+from be_challenge_app.models import Player
 
 class ImportLeagueView(View):
 
@@ -38,3 +39,25 @@ class ImportLeagueView(View):
         import_teams(response, league)
 
         return HttpResponse("OK!")
+
+class PlayersView(View):
+    def get(self, request):
+        league_code = request.GET.get('league-code')
+        team_name = request.GET.get('team-name')
+
+        if not league_code:
+            return HttpResponse("No league-code provided", status=400)
+
+        players = Player.objects.filter(team__league__code=league_code)
+        if players.count() == 0:
+            return HttpResponse("League not found", status=404)
+
+        if team_name:
+            players = players.filter(team__name=team_name)
+
+        return JsonResponse(
+            list(players.values(
+                'id', 'name', 'position', 'date_of_birth', 'nationality'
+            )),
+            safe=False
+        )
