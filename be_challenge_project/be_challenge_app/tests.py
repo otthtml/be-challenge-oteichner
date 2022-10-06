@@ -27,18 +27,18 @@ class TestImportLeagueView(TestCase):
 class PlayersView(TestCase):
     mocked_players = [
         {
-            "id": 1,
             "name": "Mocked Player",
             "position": "Mocked Position",
             "date_of_birth": "2000-01-01",
             "nationality": "Mocked Country",
+            "team__name": "Mocked Team",
         },
         {
-            "id": 2,
             "name": "Mocked Player2",
             "position": "Mocked Position2",
             "date_of_birth": "2000-01-02",
             "nationality": "Mocked Country2",
+            "team__name": "Mocked Team2",
         }
     ]
 

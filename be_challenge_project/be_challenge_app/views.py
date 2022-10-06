@@ -7,7 +7,7 @@ from django.views import View
 from ratelimit.decorators import ratelimit
 
 from be_challenge_app.services import import_league, import_teams
-from be_challenge_app.models import Player
+from be_challenge_app.models import Player, Team
 
 class ImportLeagueView(View):
 
@@ -57,7 +57,7 @@ class PlayersView(View):
 
         return JsonResponse(
             list(players.values(
-                'id', 'name', 'position', 'date_of_birth', 'nationality'
+                'name', 'position', 'date_of_birth', 'nationality', 'team__name'
             )),
             safe=False
         )
