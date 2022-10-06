@@ -42,42 +42,6 @@ class PlayersView(TestCase):
         }
     ]
 
-    def _create_mocked_objects(self):
-        league = League.objects.create(
-            name="Mocked League",
-            area="Mocked Area",
-            code="PL"
-        )
-        team = Team.objects.create(
-            name="Mocked Team",
-            short_name="MT",
-            area="Mocked Area",
-            address="Mocked Address",
-        )
-        team.league.add(league)
-        player = Player.objects.create(
-            name="Mocked Player",
-            position="Mocked Position",
-            date_of_birth="2000-01-01",
-            nationality="Mocked Country",
-        )
-        player.team.add(team)
-
-        team2 = Team.objects.create(
-            name="Mocked Team2",
-            short_name="MT2",
-            area="Mocked Area2",
-            address="Mocked Address2",
-        )
-        team2.league.add(league)
-        player2 = Player.objects.create(
-            name="Mocked Player2",
-            position="Mocked Position2",
-            date_of_birth="2000-01-02",
-            nationality="Mocked Country2",
-        )
-        player2.team.add(team2)
-
     def test_get_returns_400_if_no_league_code(self):
         response = self.client.get("/api/players/")
         self.assertEqual(response.status_code, 400)
@@ -89,13 +53,51 @@ class PlayersView(TestCase):
         self.assertEqual(response.content, b"League not found")
 
     def test_get_returns_players(self):
-        self._create_mocked_objects()
+        _create_mocked_objects()
         response = self.client.get("/api/players/?league-code=PL")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), self.mocked_players)
 
     def test_get_returns_players_from_team(self):
-        self._create_mocked_objects()
+        _create_mocked_objects()
         response = self.client.get("/api/players/?league-code=PL&team-name=Mocked Team")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), [self.mocked_players[0]])
+
+
+
+def _create_mocked_objects():
+    league = League.objects.create(
+        name="Mocked League",
+        area="Mocked Area",
+        code="PL"
+    )
+    team = Team.objects.create(
+        name="Mocked Team",
+        short_name="MT",
+        area="Mocked Area",
+        address="Mocked Address",
+    )
+    team.league.add(league)
+    player = Player.objects.create(
+        name="Mocked Player",
+        position="Mocked Position",
+        date_of_birth="2000-01-01",
+        nationality="Mocked Country",
+    )
+    player.team.add(team)
+
+    team2 = Team.objects.create(
+        name="Mocked Team2",
+        short_name="MT2",
+        area="Mocked Area2",
+        address="Mocked Address2",
+    )
+    team2.league.add(league)
+    player2 = Player.objects.create(
+        name="Mocked Player2",
+        position="Mocked Position2",
+        date_of_birth="2000-01-02",
+        nationality="Mocked Country2",
+    )
+    player2.team.add(team2)
