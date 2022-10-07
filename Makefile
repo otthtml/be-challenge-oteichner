@@ -1,7 +1,7 @@
 VENV := . env/bin/activate
 PPATH := $(VENV) && cd be_challenge_project
 
-run:
+initialize:
 	if [ ! -f be_challenge_project/db.sqlite3 ]; then \
 		make migrations; \
 		make migrate; \
@@ -9,10 +9,13 @@ run:
 	if [ ! -d env ]; then \
 		make install; \
 	fi
-	
+
+run:
+	make initialize	
 	$(PPATH) && python manage.py runserver
 
 test:
+	make initialize
 	$(PPATH) && python manage.py test
 
 migrations:
