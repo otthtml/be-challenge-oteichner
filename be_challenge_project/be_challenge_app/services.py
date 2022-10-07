@@ -23,6 +23,8 @@ def import_teams(response, related_league):
     for team in response.json().get('teams'):
         # get team name from response
         team_name = team.get('name')
+        # get team tla from response
+        team_tla = team.get('tla')
         # get team short name from response
         team_short_name = team.get('shortName')
         # get team area name from response
@@ -39,6 +41,7 @@ def import_teams(response, related_league):
         # else create team object
         db_team = Team.objects.create(
             name=team_name,
+            tla=team_tla,
             short_name=team_short_name,
             area=team_area_name,
             address=team_address
@@ -70,7 +73,6 @@ def import_players(players, related_team):
             date_of_birth=player_date_of_birth,
             nationality=player_country_of_birth
         )
-        db_player.save()
         db_player.team.add(related_team)
 
 def import_coach(coach, related_team):
@@ -87,5 +89,4 @@ def import_coach(coach, related_team):
         date_of_birth=coach_date_of_birth,
         nationality=coach_country_of_birth
     )
-    db_coach.save()
     db_coach.team.add(related_team)
