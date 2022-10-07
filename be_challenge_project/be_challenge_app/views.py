@@ -7,7 +7,7 @@ from django.views import View
 from ratelimit.decorators import ratelimit
 
 from be_challenge_app.services import import_league, import_teams
-from be_challenge_app.models import Player, Team
+from be_challenge_app.models import Coach, Player, Team
 
 class ImportLeagueView(View):
 
@@ -61,3 +61,39 @@ class PlayersView(View):
             )),
             safe=False
         )
+
+class TeamView(View):
+    def get(self, request):
+        team_name = request.GET.get('team-name')
+        if not team_name:
+            return HttpResponse("No team-name provided", status=400)
+
+        with_players = request.GET.get('with-players')
+        if with_players == 'true':
+            with_players = True
+        else:
+            with_players = False
+
+        team = Team.objects.filter(name=team_name)
+
+        if not team.first():
+            return HttpResponse("Team not found", status=404)
+
+        players = []
+        coach = ''
+
+        if with_players:
+
+            players = list(Player.objects.filter(team=team.first()).values(
+                'name', 'position', 'date_of_birth', 'nationality'
+            ))
+            if len(players) == 0:
+                coach = Coach.objects.filter(team=team.first()).values(
+                    'name', 'date_of_birth', 'nationality'
+                )
+
+        return JsonResponse({
+            'team': team.values('name', 'tla', 'short_name', 'area', 'address').first(),
+            'players': players,
+            'coach': coach,
+        })

@@ -65,6 +65,51 @@ class PlayersView(TestCase):
         self.assertEqual(response.json(), [self.mocked_players[0]])
 
 
+class TeamView(TestCase):
+    mocked_team = {
+        'team': {
+            "name": "Mocked Team",
+            "tla": "MT",
+            "short_name": "Team",
+            "area": "Mocked Area",
+            "address": "Mocked Address",
+        },
+        'players': [],
+        'coach': '',
+    }
+
+    mocked_team_with_players = mocked_team.copy()
+    mocked_team_with_players['players'] = [
+        {
+            "name": "Mocked Player",
+            "position": "Mocked Position",
+            "date_of_birth": "2000-01-01",
+            "nationality": "Mocked Country",
+        }
+    ]
+
+    def test_get_returns_400_if_no_team_name(self):
+        response = self.client.get("/api/team/")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b"No team-name provided")
+
+    def test_get_returns_404_if_team_not_found(self):
+        response = self.client.get("/api/team/?team-name=not-found")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.content, b"Team not found")
+
+    def test_get_returns_team(self):
+        _create_mocked_objects()
+        response = self.client.get("/api/team/?team-name=Mocked Team")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), self.mocked_team)
+
+    def test_get_returns_team_with_players(self):
+        _create_mocked_objects()
+        response = self.client.get("/api/team/?team-name=Mocked Team&with-players=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), self.mocked_team_with_players)
+
 
 def _create_mocked_objects():
     league = League.objects.create(
@@ -74,7 +119,8 @@ def _create_mocked_objects():
     )
     team = Team.objects.create(
         name="Mocked Team",
-        short_name="MT",
+        tla="MT",
+        short_name="Team",
         area="Mocked Area",
         address="Mocked Address",
     )
@@ -89,7 +135,8 @@ def _create_mocked_objects():
 
     team2 = Team.objects.create(
         name="Mocked Team2",
-        short_name="MT2",
+        tla="MT2",
+        short_name="Team2",
         area="Mocked Area2",
         address="Mocked Address2",
     )
