@@ -1,6 +1,35 @@
 from django.test import TestCase
 
-from be_challenge_app.models import League, Team, Player
+from be_challenge_app.models import Coach, League, Team, Player
+
+mocked_team = {
+    'team': {
+        "name": "Mocked Team",
+        "tla": "MT",
+        "short_name": "Team",
+        "area": "Mocked Area",
+        "address": "Mocked Address",
+    },
+    'players': [],
+    'coach': '',
+}
+
+mocked_team_with_players = mocked_team.copy()
+mocked_team_with_players['players'] = [
+    {
+        "name": "Mocked Player",
+        "position": "Mocked Position",
+        "date_of_birth": "2000-01-01",
+        "nationality": "Mocked Country",
+    }
+]
+
+mocked_team_with_coach = mocked_team.copy()
+mocked_team_with_coach['coach'] = {
+    "name": "Mocked Coach",
+    "date_of_birth": "2000-01-01",
+    "nationality": "Mocked Country",
+}
 
 class TestImportLeagueView(TestCase):
     def test_post_returns_400_if_no_league_code(self):
@@ -66,27 +95,6 @@ class PlayersView(TestCase):
 
 
 class TeamView(TestCase):
-    mocked_team = {
-        'team': {
-            "name": "Mocked Team",
-            "tla": "MT",
-            "short_name": "Team",
-            "area": "Mocked Area",
-            "address": "Mocked Address",
-        },
-        'players': [],
-        'coach': '',
-    }
-
-    mocked_team_with_players = mocked_team.copy()
-    mocked_team_with_players['players'] = [
-        {
-            "name": "Mocked Player",
-            "position": "Mocked Position",
-            "date_of_birth": "2000-01-01",
-            "nationality": "Mocked Country",
-        }
-    ]
 
     def test_get_returns_400_if_no_team_name(self):
         response = self.client.get("/api/team/")
@@ -102,14 +110,37 @@ class TeamView(TestCase):
         _create_mocked_objects()
         response = self.client.get("/api/team/?team-name=Mocked Team")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), self.mocked_team)
+        self.assertEqual(response.json(), mocked_team)
 
     def test_get_returns_team_with_players(self):
         _create_mocked_objects()
         response = self.client.get("/api/team/?team-name=Mocked Team&with-players=true")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), self.mocked_team_with_players)
+        self.assertEqual(response.json(), mocked_team_with_players)
 
+
+class TestTeamPlayersView(TestCase):
+    def test_get_returns_400_if_no_team_name(self):
+        response = self.client.get("/api/team-players/")
+        self.assertEqual(response.status_code, 400)
+        self.assertEqual(response.content, b"No team-name provided")
+
+    def test_get_returns_404_if_team_not_found(self):
+        response = self.client.get("/api/team-players/?team-name=not-found")
+        self.assertEqual(response.status_code, 404)
+        self.assertEqual(response.content, b"Team not found")
+
+    def test_get_returns_players(self):
+        _create_mocked_objects()
+        response = self.client.get("/api/team-players/?team-name=Mocked Team")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), mocked_team_with_players['players'])
+
+    def test_get_returns_coach(self):
+        _create_mocked_objects()
+        response = self.client.get("/api/team-players/?team-name=Mocked Team with coach")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json()["coach"], mocked_team_with_coach["coach"])
 
 def _create_mocked_objects():
     league = League.objects.create(
@@ -148,3 +179,18 @@ def _create_mocked_objects():
         nationality="Mocked Country2",
     )
     player2.team.add(team2)
+
+    team_with_coach = Team.objects.create(
+        name="Mocked Team with coach",
+        tla="MTC",
+        short_name="Team with coach",
+        area="Mocked Area",
+        address="Mocked Address",
+    )
+    team_with_coach.league.add(league)
+    coach = Coach.objects.create(
+        name="Mocked Coach",
+        date_of_birth="2000-01-01",
+        nationality="Mocked Country",
+    )
+    coach.team.add(team_with_coach)

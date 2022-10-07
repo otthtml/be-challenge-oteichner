@@ -97,3 +97,32 @@ class TeamView(View):
             'players': players,
             'coach': coach,
         })
+
+class TeamPlayersView(View):
+
+    def get(self, request):
+        team_name = request.GET.get('team-name')
+        if not team_name:
+            return HttpResponse("No team-name provided", status=400)
+
+        team = Team.objects.filter(name=team_name)
+
+        if not team.first():
+            return HttpResponse("Team not found", status=404)
+
+        players = Player.objects.filter(team=team.first())
+
+        if players.count() == 0:
+            coach = Coach.objects.filter(team=team.first())
+            return JsonResponse({
+                'coach': coach.values(
+                    'name', 'date_of_birth', 'nationality'
+                ).first()
+            })
+
+        return JsonResponse(
+            list(players.values(
+                'name', 'position', 'date_of_birth', 'nationality'
+            )),
+            safe=False
+        )
