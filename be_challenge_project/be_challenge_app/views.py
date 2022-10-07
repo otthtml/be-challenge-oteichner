@@ -68,35 +68,34 @@ class TeamView(View):
         if not team_name:
             return HttpResponse("No team-name provided", status=400)
 
-        with_players = request.GET.get('with-players')
-        if with_players == 'true':
-            with_players = True
-        else:
-            with_players = False
-
         team = Team.objects.filter(name=team_name)
 
         if not team.first():
             return HttpResponse("Team not found", status=404)
 
-        players = []
-        coach = ''
+        if request.GET.get('with-players') == 'true':
 
-        if with_players:
+            players = Player.objects.filter(team=team.first())
+            if players.count() == 0:
+                coach = Coach.objects.filter(team=team.first())
+                return JsonResponse({
+                    'team': team.values('name', 'tla', 'short_name', 'area', 'address').first(),
+                    'players': [],
+                    'coach': coach.values(
+                        'name', 'date_of_birth', 'nationality'
+                    ).first()
+                })
+            return JsonResponse({
+                'team': team.values('name', 'tla', 'short_name', 'area', 'address').first(),
+                'players': list(players.values(
+                    'name', 'position', 'date_of_birth', 'nationality'
+                )),
+                'coach': ''
+            })
 
-            players = list(Player.objects.filter(team=team.first()).values(
-                'name', 'position', 'date_of_birth', 'nationality'
-            ))
-            if len(players) == 0:
-                coach = Coach.objects.filter(team=team.first()).values(
-                    'name', 'date_of_birth', 'nationality'
-                )
-
-        return JsonResponse({
-            'team': team.values('name', 'tla', 'short_name', 'area', 'address').first(),
-            'players': players,
-            'coach': coach,
-        })
+        return JsonResponse(
+            team.values('name', 'tla', 'short_name', 'area', 'address').first(),
+        )
 
 class TeamPlayersView(View):
 

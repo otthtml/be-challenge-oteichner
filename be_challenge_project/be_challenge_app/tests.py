@@ -1,3 +1,4 @@
+from copy import deepcopy
 from django.test import TestCase
 
 from be_challenge_app.models import Coach, League, Team, Player
@@ -24,12 +25,15 @@ mocked_team_with_players['players'] = [
     }
 ]
 
-mocked_team_with_coach = mocked_team.copy()
+mocked_team_with_coach = deepcopy(mocked_team)
 mocked_team_with_coach['coach'] = {
     "name": "Mocked Coach",
     "date_of_birth": "2000-01-01",
     "nationality": "Mocked Country",
 }
+mocked_team_with_coach["team"]["name"] = "Mocked Team with coach"
+mocked_team_with_coach["team"]["tla"] = "MTC"
+mocked_team_with_coach["team"]["short_name"] = "Team with coach"
 
 class TestImportLeagueView(TestCase):
     def test_post_returns_400_if_no_league_code(self):
@@ -110,13 +114,19 @@ class TeamView(TestCase):
         _create_mocked_objects()
         response = self.client.get("/api/team/?team-name=Mocked Team")
         self.assertEqual(response.status_code, 200)
-        self.assertEqual(response.json(), mocked_team)
+        self.assertEqual(response.json(), mocked_team["team"])
 
     def test_get_returns_team_with_players(self):
         _create_mocked_objects()
         response = self.client.get("/api/team/?team-name=Mocked Team&with-players=true")
         self.assertEqual(response.status_code, 200)
         self.assertEqual(response.json(), mocked_team_with_players)
+
+    def test_get_returns_team_with_coach(self):
+        _create_mocked_objects()
+        response = self.client.get("/api/team/?team-name=Mocked Team with coach&with-players=true")
+        self.assertEqual(response.status_code, 200)
+        self.assertEqual(response.json(), mocked_team_with_coach)
 
 
 class TestTeamPlayersView(TestCase):
