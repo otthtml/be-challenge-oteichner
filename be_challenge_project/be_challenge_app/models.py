@@ -8,6 +8,7 @@ class League(models.Model):
 
 class Team(models.Model):
     name = models.CharField(max_length=100)
+    tla = models.CharField(max_length=10)
     short_name = models.CharField(max_length=10)
     area = models.CharField(max_length=100)
     address = models.CharField(max_length=100)
